@@ -8,14 +8,16 @@
 
 import UIKit
 
-class ViewController: UIViewController {
+class ViewController: UIViewController, UITextFieldDelegate {
     
     @IBOutlet weak var logo: UIImageView!
     @IBOutlet weak var textoISBN: UITextField!
     @IBOutlet weak var scroll: UIScrollView!
+    var textoSalidaWebService: String = ""
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        textoISBN.delegate = self
         self.logo.image = UIImage(named: "logo_OL-lg")
         textoISBN.becomeFirstResponder()
     }
@@ -30,9 +32,8 @@ class ViewController: UIViewController {
     }
     
     override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-        let textoSigVista = String(sincrono(textoISBN.text!)) //String(asincrono(textoISBN.text!))
         let sigVista = segue.destinationViewController as! VistaResultados
-        sigVista.textoISBN = textoSigVista
+        sigVista.textoISBN = sincrono(textoISBN.text!)
         
         //Cambiar nombre del botón BACK de un segue
         let backItem = UIBarButtonItem()
@@ -52,7 +53,6 @@ class ViewController: UIViewController {
 
     @IBAction func textFieldDoneEditing(sender: UITextField) {
         sender.resignFirstResponder() //desaparecer el teclado
-        //sincrono(textoISBN.text!)
     }
     
     func sincrono(textoISBN: String)-> String {
@@ -66,10 +66,14 @@ class ViewController: UIViewController {
             resultado = String(NSString(data: datos!, encoding: NSUTF8StringEncoding))
         }catch {
             resultado = String(error)
+            let alertController = UIAlertController(title: "", message:
+                "Por favor revisa tu conexión a Internet.", preferredStyle: UIAlertControllerStyle.Alert)
+            alertController.addAction(UIAlertAction(title: "Aceptar", style: UIAlertActionStyle.Default, handler: nil))
+            self.presentViewController(alertController, animated: true, completion: nil)
         }
         return resultado
     }
-    
+
     func asincrono(textoISBN: String) {
         /* incluir en Info.plist
         <key>NSAppTransportSecurity</key>
@@ -102,12 +106,33 @@ class ViewController: UIViewController {
         let sesion = NSURLSession.sharedSession()
         let bloque = {
             (datos: NSData?, resp: NSURLResponse?, error: NSError?) -> Void in
+            if (error != nil) {
+                dispatch_sync(dispatch_get_main_queue()) {
+                    self.controlarConexionInternet("")
+                }
+            } else {
                 let texto = NSString(data: datos!, encoding: NSUTF8StringEncoding)
-                print(texto!)
-            print(error)
+                //print(texto)
+                dispatch_sync(dispatch_get_main_queue()) {
+                    self.controlarConexionInternet(String(texto))
+                }
+            }
         }
         let dt = sesion.dataTaskWithURL(url!, completionHandler: bloque)
         dt.resume()
+    }
+    
+    func controlarConexionInternet(msj: String){
+        if (msj != "") {
+            textoSalidaWebService = String(msj)
+            print("yes")
+        } else {
+            let alertController = UIAlertController(title: "", message:
+                "Por favor revisa tu conexión a Internet.", preferredStyle: UIAlertControllerStyle.Alert)
+            alertController.addAction(UIAlertAction(title: "Aceptar", style: UIAlertActionStyle.Default, handler: nil))
+            self.presentViewController(alertController, animated: true, completion: nil)
+            print("error")
+        }
     }
 }
 

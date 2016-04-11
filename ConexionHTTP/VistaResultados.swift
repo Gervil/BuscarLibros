@@ -32,6 +32,10 @@ class VistaResultados: UIViewController {
             resultadoISBN.text = textoISBN
         }
     }
+    
+    override func viewDidDisappear(animated: Bool) {
+        resultadoISBN.text = ""
+    }
 
     /*
     // MARK: - Navigation
